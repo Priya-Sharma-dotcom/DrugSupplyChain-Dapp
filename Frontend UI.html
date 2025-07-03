@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Drug Supply Chain DApp</title>
+  <script src="https://cdn.jsdelivr.net/npm/web3@1.8.2/dist/web3.min.js"></script>
+</head>
+<body>
+  <h2>Drug Supply Chain (Ganache + MetaMask)</h2>
+
+  <div>
+    <h3>Register Drug</h3>
+    <input type="text" id="drugName" placeholder="Drug name" />
+    <button onclick="registerDrug()">Register</button>
+  </div>
+
+  <div>
+    <h3>Transfer Drug</h3>
+    <input type="number" id="transferDrugId" placeholder="Drug ID" />
+    <input type="text" id="newOwner" placeholder="New Owner Address" />
+    <button onclick="transferDrug()">Transfer</button>
+  </div>
+
+  <div>
+    <h3>Update Drug Status</h3>
+    <input type="number" id="statusDrugId" placeholder="Drug ID" />
+    <select id="newStatus">
+      <option value="0">Created</option>
+      <option value="1">InTransit</option>
+      <option value="2">Delivered</option>
+    </select>
+    <button onclick="updateStatus()">Update Status</button>
+  </div>
+
+  <div>
+    <h3>Get Drug Details</h3>
+    <input type="number" id="detailDrugId" placeholder="Drug ID" />
+    <button onclick="getDetails()">Fetch Details</button>
+    <pre id="drugDetails"></pre>
+  </div>
+
+  <div>
+    <h3>Get Drug History</h3>
+    <input type="number" id="historyDrugId" placeholder="Drug ID" />
+    <button onclick="getHistory()">Fetch History</button>
+    <pre id="drugHistory"></pre>
+  </div>
+
+  <script>
+    let web3;
+    let contract;
+    let account;
+
+    const contractAddress = "0x784E1b0168e670F324007c66e96BEdD5aa8Ac1D6"; // ✅ Your deployed contract address
+
+    async function loadAbi() {
+      const response = await fetch("abi.json");
+      return await response.json();
+    }
+
+    async function loadApp() {
+      if (window.ethereum) {
+        web3 = new Web3(window.ethereum);
+        await ethereum.request({ method: 'eth_requestAccounts' });
+        const accounts = await web3.eth.getAccounts();
+        account = accounts[0];
+        const abi = await loadAbi();
+        contract = new web3.eth.Contract(abi, contractAddress);
+        console.log("Connected account:", account);
+      } else {
+        alert("Please install MetaMask!");
+      }
+    }
+
+    async function registerDrug() {
+      const name = document.getElementById("drugName").value;
+      await contract.methods.drugRegistered(name).send({ from: account });
+      alert("Drug registered");
+    }
+
+    async function transferDrug() {
+      const id = document.getElementById("transferDrugId").value;
+      const newOwner = document.getElementById("newOwner").value;
+      await contract.methods.TransferDrugs(id, newOwner).send({ from: account });
+      alert("Drug transferred");
+    }
+
+    async function updateStatus() {
+      const id = document.getElementById("statusDrugId").value;
+      const status = document.getElementById("newStatus").value;
+      await contract.methods.UpdateStatus(id, status).send({ from: account });
+      alert("Status updated");
+    }
+
+    async function getDetails() {
+      const id = document.getElementById("detailDrugId").value;
+      const result = await contract.methods.getDrugsDetails(id).call();
+      document.getElementById("drugDetails").innerText =
+        `Name: ${result[0]}\nStatus: ${["Created", "InTransit", "Delivered"][result[1]]}\nCurrent Owner: ${result[2]}`;
+    }
+
+    async function getHistory() {
+      const id = document.getElementById("historyDrugId").value;
+      const result = await contract.methods.getDrugHistory(id).call();
+      document.getElementById("drugHistory").innerText = result.join("\n");
+    }
+
+    loadApp();
+  </script>
+</body>
+</html>
