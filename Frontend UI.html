@@ -1,110 +1,182 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Drug Supply Chain DApp</title>
-  <script src="https://cdn.jsdelivr.net/npm/web3@1.8.2/dist/web3.min.js"></script>
+    <title>Drug Supply Chain (Sepolia)</title>
+    <script src="https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
+    <style>
+        body { font-family: Arial; margin: 20px; background: #f0f0f0; }
+        h2 { color: #333; }
+        .box { background: white; padding: 20px; margin-bottom: 20px; border-radius: 10px; box-shadow: 0 0 10px #ccc; }
+        label { display: block; margin-top: 10px; }
+        input, select { padding: 5px; width: 100%; margin-top: 5px; }
+        button { margin-top: 10px; padding: 10px; width: 100%; background: #4CAF50; color: white; border: none; cursor: pointer; }
+        button:hover { background: #45a049; }
+    </style>
 </head>
 <body>
-  <h2>Drug Supply Chain (Ganache + MetaMask)</h2>
+    <h2>Drug Supply Chain - Sepolia Frontend</h2>
+    <div class="box">
+        <button onclick="connectWallet()">Connect MetaMask</button>
+        <p id="account">Not connected</p>
+    </div>
 
-  <div>
-    <h3>Register Drug</h3>
-    <input type="text" id="drugName" placeholder="Drug name" />
-    <button onclick="registerDrug()">Register</button>
-  </div>
+    <div class="box">
+        <h3>Assign Role (Only Admin)</h3>
+        <label>Address</label><input id="roleAddress" type="text">
+        <label>Role</label>
+        <select id="roleType">
+            <option value="1">Manufacturer</option>
+            <option value="2">Supplier</option>
+            <option value="3">Distributor</option>
+            <option value="4">Pharmacy</option>
+            <option value="5">Patient</option>
+        </select>
+        <button onclick="assignRole()">Assign</button>
+    </div>
 
-  <div>
-    <h3>Transfer Drug</h3>
-    <input type="number" id="transferDrugId" placeholder="Drug ID" />
-    <input type="text" id="newOwner" placeholder="New Owner Address" />
-    <button onclick="transferDrug()">Transfer</button>
-  </div>
+    <div class="box">
+        <h3>Register Drug (Manufacturer only)</h3>
+        <label>Name</label><input id="drugName" type="text">
+        <label>Price (in wei)</label><input id="drugPrice" type="number">
+        <button onclick="registerDrug()">Register</button>
+    </div>
 
-  <div>
-    <h3>Update Drug Status</h3>
-    <input type="number" id="statusDrugId" placeholder="Drug ID" />
-    <select id="newStatus">
-      <option value="0">Created</option>
-      <option value="1">InTransit</option>
-      <option value="2">Delivered</option>
-    </select>
-    <button onclick="updateStatus()">Update Status</button>
-  </div>
+    <div class="box">
+        <h3>Transfer Drug Ownership</h3>
+        <label>Drug ID</label><input id="transferId" type="number">
+        <label>New Owner Address</label><input id="newOwner" type="text">
+        <button onclick="transferDrug()">Transfer</button>
+    </div>
 
-  <div>
-    <h3>Get Drug Details</h3>
-    <input type="number" id="detailDrugId" placeholder="Drug ID" />
-    <button onclick="getDetails()">Fetch Details</button>
-    <pre id="drugDetails"></pre>
-  </div>
+    <div class="box">
+        <h3>Update Drug Status</h3>
+        <label>Drug ID</label><input id="statusId" type="number">
+        <label>Status</label>
+        <select id="newStatus">
+            <option value="1">In Transit</option>
+            <option value="2">Delivered</option>
+        </select>
+        <button onclick="updateStatus()">Update</button>
+    </div>
 
-  <div>
-    <h3>Get Drug History</h3>
-    <input type="number" id="historyDrugId" placeholder="Drug ID" />
-    <button onclick="getHistory()">Fetch History</button>
-    <pre id="drugHistory"></pre>
-  </div>
+    <div class="box">
+        <h3>Get Drug Info</h3>
+        <label>Drug ID</label><input id="infoId" type="number">
+        <button onclick="getDrugInfo()">Fetch</button>
+        <pre id="drugInfo"></pre>
+    </div>
 
-  <script>
-    let web3;
-    let contract;
-    let account;
+    <div class="box">
+        <h3>Get Ownership History</h3>
+        <label>Drug ID</label><input id="historyId" type="number">
+        <button onclick="getHistory()">Fetch</button>
+        <pre id="history"></pre>
+    </div>
 
-    const contractAddress = "0x784E1b0168e670F324007c66e96BEdD5aa8Ac1D6"; // ✅ Your deployed contract address
+    <script>
+        let web3;
+        let contract;
+        let currentAccount;
+        const contractAddress = "0x784E1b0168e670F324007c66e96BEdD5aa8Ac1D6"; // Your Sepolia deployed address
 
-    async function loadAbi() {
-      const response = await fetch("abi.json");
-      return await response.json();
-    }
+        async function connectWallet() {
+            if (window.ethereum) {
+                web3 = new Web3(window.ethereum);
+                try {
+                    await window.ethereum.request({ method: 'eth_requestAccounts' });
+                    const accounts = await web3.eth.getAccounts();
+                    currentAccount = accounts[0];
+                    document.getElementById("account").innerText = `Connected: ${currentAccount}`;
 
-    async function loadApp() {
-      if (window.ethereum) {
-        web3 = new Web3(window.ethereum);
-        await ethereum.request({ method: 'eth_requestAccounts' });
-        const accounts = await web3.eth.getAccounts();
-        account = accounts[0];
-        const abi = await loadAbi();
-        contract = new web3.eth.Contract(abi, contractAddress);
-        console.log("Connected account:", account);
-      } else {
-        alert("Please install MetaMask!");
-      }
-    }
+                    // Load ABI from abi.json dynamically
+                    const response = await fetch("abi.json");
+                    const abi = await response.json();
+                    contract = new web3.eth.Contract(abi, contractAddress);
+                } catch (err) {
+                    console.error("User denied wallet connection:", err);
+                }
+            } else {
+                alert("MetaMask not found. Please install it.");
+            }
+        }
 
-    async function registerDrug() {
-      const name = document.getElementById("drugName").value;
-      await contract.methods.drugRegistered(name).send({ from: account });
-      alert("Drug registered");
-    }
+        async function assignRole() {
+            const addr = document.getElementById("roleAddress").value;
+            const role = document.getElementById("roleType").value;
+            if (!addr) return alert("Enter address");
 
-    async function transferDrug() {
-      const id = document.getElementById("transferDrugId").value;
-      const newOwner = document.getElementById("newOwner").value;
-      await contract.methods.TransferDrugs(id, newOwner).send({ from: account });
-      alert("Drug transferred");
-    }
+            try {
+                await contract.methods.assignRoles(addr, role).send({ from: currentAccount });
+                alert("Role assigned successfully!");
+            } catch (err) {
+                alert("Transaction failed: " + err.message);
+            }
+        }
 
-    async function updateStatus() {
-      const id = document.getElementById("statusDrugId").value;
-      const status = document.getElementById("newStatus").value;
-      await contract.methods.UpdateStatus(id, status).send({ from: account });
-      alert("Status updated");
-    }
+        async function registerDrug() {
+            const name = document.getElementById("drugName").value;
+            const price = document.getElementById("drugPrice").value;
+            if (!name || !price) return alert("Fill in all fields");
 
-    async function getDetails() {
-      const id = document.getElementById("detailDrugId").value;
-      const result = await contract.methods.getDrugsDetails(id).call();
-      document.getElementById("drugDetails").innerText =
-        `Name: ${result[0]}\nStatus: ${["Created", "InTransit", "Delivered"][result[1]]}\nCurrent Owner: ${result[2]}`;
-    }
+            try {
+                await contract.methods.RegisterDrug(name, price).send({ from: currentAccount });
+                alert("Drug registered!");
+            } catch (err) {
+                alert("Error registering drug: " + err.message);
+            }
+        }
 
-    async function getHistory() {
-      const id = document.getElementById("historyDrugId").value;
-      const result = await contract.methods.getDrugHistory(id).call();
-      document.getElementById("drugHistory").innerText = result.join("\n");
-    }
+        async function transferDrug() {
+            const id = document.getElementById("transferId").value;
+            const newOwner = document.getElementById("newOwner").value;
+            if (!id || !newOwner) return alert("Fill in all fields");
 
-    loadApp();
-  </script>
+            try {
+                await contract.methods.DrugTransferOwnership(id, newOwner).send({ from: currentAccount });
+                alert("Ownership transferred!");
+            } catch (err) {
+                alert("Transfer failed: " + err.message);
+            }
+        }
+
+        async function updateStatus() {
+            const id = document.getElementById("statusId").value;
+            const status = document.getElementById("newStatus").value;
+            if (!id) return alert("Enter Drug ID");
+
+            try {
+                await contract.methods.UpdateDrugStatus(id, status).send({ from: currentAccount });
+                alert("Status updated!");
+            } catch (err) {
+                alert("Error updating status: " + err.message);
+            }
+        }
+
+        async function getDrugInfo() {
+            const id = document.getElementById("infoId").value;
+            if (!id) return alert("Enter Drug ID");
+
+            try {
+                const result = await contract.methods.getDrugInfo(id).call();
+                const statusEnum = ["Created", "In Transit", "Delivered"];
+                document.getElementById("drugInfo").innerText =
+                    `Name: ${result[0]}\nOwner: ${result[1]}\nPrice: ${result[2]} wei\nStatus: ${statusEnum[result[3]]}\nManufacturer: ${result[4]}`;
+            } catch (err) {
+                alert("Error fetching drug info: " + err.message);
+            }
+        }
+
+        async function getHistory() {
+            const id = document.getElementById("historyId").value;
+            if (!id) return alert("Enter Drug ID");
+
+            try {
+                const history = await contract.methods.getOwnershipHistory(id).call();
+                document.getElementById("history").innerText = history.join("\n");
+            } catch (err) {
+                alert("Error fetching history: " + err.message);
+            }
+        }
+    </script>
 </body>
 </html>
