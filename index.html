@@ -110,7 +110,7 @@
             if (!addr) return alert("Enter address");
 
             try {
-                await contract.methods.assignRoles(addr, role).send({ from: currentAccount });
+                await contract.methods.assignRoles(addr, role).send({ from: admin });
                 alert("Role assigned successfully!");
             } catch (err) {
                 alert("Transaction failed: " + err.message);
