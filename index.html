@@ -103,19 +103,21 @@
                 alert("MetaMask not found. Please install it.");
             }
         }
+async function assignRole() {
+    const addr = document.getElementById("roleAddress").value;
+    const role = document.getElementById("roleType").value;
 
-        async function assignRole() {
-            const addr = document.getElementById("roleAddress").value;
-            const role = document.getElementById("roleType").value;
-            if (!addr) return alert("Enter address");
+    if (!addr) return alert("Enter address");
 
-            try {
-                await contract.methods.assignRoles(addr, role).send({ from: admin });
-                alert("Role assigned successfully!");
-            } catch (err) {
-                alert("Transaction failed: " + err.message);
-            }
-        }
+    try {
+        // ASSUMPTION: currentAccount is admin account
+        await contract.methods.assignRoles(addr, role).send({ from: currentAccount });
+        alert("Role assigned successfully!");
+    } catch (err) {
+        alert("Transaction failed: " + err.message);
+    }
+}
+
 
         async function registerDrug() {
             const name = document.getElementById("drugName").value;
