@@ -1,79 +1,120 @@
-// SPDX-License-Identifier: MIT
+//SPDX-License-Identifier:MIT
 pragma solidity ^0.8.0;
 
-contract DrugSupplyChain {
+contract DrugSC{
 
-    enum Role { none, Manufacturer, Supplier, Distributor, Pharmacy, Consumer }
-    enum Status { Created, InTransit, Delivered }
+    address public admin;
 
-    struct Drug {
-        uint id;
+    constructor(){
+        admin=msg.sender;
+    }
+
+    enum Role{none,manufacturer,supplier,distributor,pharmacy,patient}
+    enum Status{Created,inTransit,Delivered}
+
+    struct Drug{
         string name;
+        address manufacturer;
         Status status;
-        address[] history;
+        uint price;
         address currentOwner;
+        address[] owners;
+
     }
 
-    uint public drugCounter = 0;
-
-    mapping(uint => Drug) public drugs;
-    mapping(address => Role) public roles;
-
-    modifier OnlyRole(Role _role) {
-        require(roles[msg.sender] == _role, "Unauthorized: Incorrect Role");
+    modifier OnlyAdmin(){
+        require(msg.sender==admin,"not admin so cannot use function");
         _;
     }
 
-    modifier OnlyCurrentOwner(uint id) {
-        require(msg.sender == drugs[id].currentOwner, "Only current owner can perform this action");
+
+    modifier OnlyRole(Role _role){
+        require(roles[msg.sender]==_role,"not included in tasks of assigned role");
         _;
     }
 
-    event DrugRegistered(uint id, string name, address manufacturer);
-    event DrugTransferred(uint id, address from, address to);
-    event StatusUpdated(uint id, Status status);
-
-    function assignRoles(address user, Role _role) public {
-        roles[user] = _role;
+    modifier OnlyCurrentOwner(uint id){
+        require(msg.sender==drugs[id].currentOwner,"not current owner");
+        _;
     }
 
-    function drugRegistered(string memory _name) public OnlyRole(Role.Manufacturer) {
+    mapping ( uint => Drug) public drugs;
+    mapping ( address => Role) public roles;
+
+
+    event DrugRegistered(uint id, address manufacturer);
+    event DrugOwnershipTransfered(uint id, address from, address to);
+    event DrugStatusUpdated(uint id, Status status);
+
+
+    function assignRoles(address roleAdd, Role _role)public OnlyAdmin{
+        roles[roleAdd]=_role;
+    }
+
+    uint public drugCounter;
+    function RegisterDrug(string memory _name, uint _price)public OnlyRole(Role.manufacturer){
+
         drugCounter++;
-        Drug storage drug = drugs[drugCounter];
-        drug.id = drugCounter;
-        drug.name = _name;
-        drug.status = Status.Created;
-        drug.currentOwner = msg.sender;
-        drug.history.push(msg.sender);
 
-        emit DrugRegistered(drugCounter, _name, msg.sender);
+        Drug storage d=drugs[drugCounter];
+        d.name=_name;
+        d.manufacturer=msg.sender;
+        d.price=_price;
+        d.status=Status.Created;
+        d.currentOwner=msg.sender;
+        d.owners.push(msg.sender);
+
+        emit DrugRegistered(drugCounter, msg.sender);
+
     }
 
-    function TransferDrugs(uint id, address newOwner) public OnlyCurrentOwner(id) {
-        require(roles[newOwner] != Role.none, "New owner must have a valid role");
+    function DrugTransferOwnership(uint id, address newOwner)public OnlyCurrentOwner (id){
 
-        Drug storage drug = drugs[id];
-        drug.currentOwner = newOwner;
-        drug.history.push(newOwner);
-        drug.status = Status.InTransit;
+        require(roles[newOwner]!=Role.none,"no role ");
+        require(roles[msg.sender]!=Role.none,"no role of sender");
+        require(roles[newOwner]!=Role.manufacturer,"manufacturer cannot own drugs");
+        require(uint(roles[newOwner]) > uint(roles[msg.sender]), "Invalid role progression");
 
-        emit DrugTransferred(id, msg.sender, newOwner);
+
+        Drug storage d=drugs[id];
+        d.currentOwner=newOwner;
+        d.owners.push(newOwner);
+
+        d.status=Status.inTransit;
+
+        emit DrugOwnershipTransfered(id,msg.sender,newOwner);
+
     }
 
-    function UpdateStatus(uint id, Status _status) public OnlyCurrentOwner(id) {
-        drugs[id].status = _status;
+    function UpdateDrugStatus(uint id, Status newStatus)public OnlyCurrentOwner(id){
 
-        emit StatusUpdated(id, _status);
+        Drug storage d= drugs[id];
+        d.status=newStatus;
+
+        emit DrugStatusUpdated(id, newStatus);
     }
 
-    function getDrugHistory(uint id) public view returns (address[] memory) {
-        return drugs[id].history;
+    function getOwnershipHistory(uint id)public view returns(address [] memory){
+        return drugs[id].owners;
     }
 
-    function getDrugsDetails(uint drugID) public view returns (
-        string memory, Status, address, address[] memory
-    ) {
-        Drug storage d = drugs[drugID];
-        return (d.name, d.status, d.currentOwner, d.history);
+    function getCurrentOwner(uint id)public view returns(address){
+        return drugs[id].currentOwner;
     }
+
+    function getDrugInfo(uint id)public view returns(string memory,address,uint,Status,address){
+        return (drugs[id].name,drugs[id].currentOwner,drugs[id].price,drugs[id].status,drugs[id].manufacturer);
+    }
+
 }
+
+
+
+
+
+
+
+
+
+
+
