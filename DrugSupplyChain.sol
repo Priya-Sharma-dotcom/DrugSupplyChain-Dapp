@@ -36,10 +36,6 @@ contract DrugSC {
         _;
     }
 
-    modifier OnlyAssignedUser() {
-        require(roles[msg.sender] != Role.none, "Not an assigned user");
-        _;
-    }
 
     mapping(uint => Drug) public drugs;
     mapping(address => Role) public roles;
@@ -96,15 +92,15 @@ contract DrugSC {
         emit DrugStatusUpdated(id, newStatus);
     }
 
-    function getOwnershipHistory(uint id) public view OnlyAssignedUser returns (address[] memory) {
+    function getOwnershipHistory(uint id) public view  returns (address[] memory) {
         return drugs[id].owners;
     }
 
-    function getCurrentOwner(uint id) public view OnlyAssignedUser returns (address) {
+    function getCurrentOwner(uint id) public view  returns (address) {
         return drugs[id].currentOwner;
     }
 
-    function getDrugInfo(uint id) public view OnlyAssignedUser returns (string memory, address, uint, Status, address) {
+    function getDrugInfo(uint id) public view  returns (string memory, address, uint, Status, address) {
         Drug storage d = drugs[id];
         return (d.name, d.currentOwner, d.price, d.status, d.manufacturer);
     }
