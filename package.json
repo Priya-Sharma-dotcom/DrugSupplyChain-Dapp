@@ -1,0 +1,17 @@
+{
+  "name": "drug",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+  "start": "node server.js"
+},
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "type": "commonjs",
+  "dependencies": {
+    "express": "^5.1.0",
+    "web3": "^4.16.0"
+  }
+}
