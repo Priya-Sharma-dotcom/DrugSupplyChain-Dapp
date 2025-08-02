@@ -72,6 +72,11 @@
         <button onclick="getHistory()">Fetch</button>
         <pre id="history"></pre>
     </div>
+    <div class="box">
+    <h3>Check My Role</h3>
+    <button onclick="checkMyRole()">Check</button>
+    <pre id="myRole"></pre>
+</div>
 
     <script>
         let web3;
@@ -176,6 +181,16 @@
                 alert("Error fetching history: " + err.message);
             }
         }
+        
+    async function checkMyRole() {
+        try {
+            const role = await contract.methods.roles(currentAccount).call();
+            const roles = ["None", "Manufacturer", "Supplier", "Distributor", "Pharmacy", "Patient"];
+            document.getElementById("myRole").innerText = `Role: ${roles[role]}`;
+        } catch (err) {
+            alert("Error fetching role: " + err.message);
+        }
+    }
     </script>
 </body>
 </html>
