@@ -15,9 +15,16 @@
 </head>
 <body>
     <h2>Drug Supply Chain - Sepolia Frontend</h2>
+
     <div class="box">
         <button onclick="connectWallet()">Connect MetaMask</button>
         <p id="account">Not connected</p>
+    </div>
+
+    <div class="box">
+        <h3>Total Registered Drugs</h3>
+        <button onclick="getDrugCount()">Show Count</button>
+        <p id="drugCount">---</p>
     </div>
 
     <div class="box">
@@ -77,7 +84,7 @@
         let web3;
         let contract;
         let currentAccount;
-        const contractAddress = "0x784E1b0168e670F324007c66e96BEdD5aa8Ac1D6"; // Your Sepolia deployed address
+        const contractAddress = "0x784E1b0168e670F324007c66e96BEdD5aa8Ac1D6"; // Your deployed contract
 
         async function connectWallet() {
             if (window.ethereum) {
@@ -87,16 +94,15 @@
                     const accounts = await web3.eth.getAccounts();
                     currentAccount = accounts[0];
                     document.getElementById("account").innerText = `Connected: ${currentAccount}`;
-
-                    // Load ABI from abi.json dynamically
                     const response = await fetch("abi.json");
                     const abi = await response.json();
                     contract = new web3.eth.Contract(abi, contractAddress);
                 } catch (err) {
-                    console.error("User denied wallet connection:", err);
+                    alert("Failed to connect MetaMask");
+                    console.error(err);
                 }
             } else {
-                alert("MetaMask not found. Please install it.");
+                alert("Please install MetaMask");
             }
         }
 
@@ -119,7 +125,7 @@
             if (!name || !price) return alert("Fill in all fields");
 
             try {
-                await contract.methods.RegisterDrug(name, price).send({ from: currentAccount });
+                await contract.methods.registerDrug(name, price).send({ from: currentAccount });
                 alert("Drug registered!");
             } catch (err) {
                 alert("Error registering drug: " + err.message);
@@ -132,7 +138,7 @@
             if (!id || !newOwner) return alert("Fill in all fields");
 
             try {
-                await contract.methods.DrugTransferOwnership(id, newOwner).send({ from: currentAccount });
+                await contract.methods.drugTransferOwnership(id, newOwner).send({ from: currentAccount });
                 alert("Ownership transferred!");
             } catch (err) {
                 alert("Transfer failed: " + err.message);
@@ -145,7 +151,7 @@
             if (!id) return alert("Enter Drug ID");
 
             try {
-                await contract.methods.UpdateDrugStatus(id, status).send({ from: currentAccount });
+                await contract.methods.updateDrugStatus(id, status).send({ from: currentAccount });
                 alert("Status updated!");
             } catch (err) {
                 alert("Error updating status: " + err.message);
@@ -157,12 +163,16 @@
             if (!id) return alert("Enter Drug ID");
 
             try {
-                const result = await contract.methods.getDrugInfo(id).call();
+                const result = await contract.methods.getDrugInfo(id).call({ from: currentAccount });
                 const statusEnum = ["Created", "In Transit", "Delivered"];
                 document.getElementById("drugInfo").innerText =
                     `Name: ${result[0]}\nOwner: ${result[1]}\nPrice: ${result[2]} wei\nStatus: ${statusEnum[result[3]]}\nManufacturer: ${result[4]}`;
             } catch (err) {
-                alert("Error fetching drug info: " + err.message);
+                if (err.message.includes("Not an assigned user")) {
+                    document.getElementById("drugInfo").innerText = "Not assigned to any role";
+                } else {
+                    alert("Error fetching drug info: " + err.message);
+                }
             }
         }
 
@@ -171,10 +181,23 @@
             if (!id) return alert("Enter Drug ID");
 
             try {
-                const history = await contract.methods.getOwnershipHistory(id).call();
+                const history = await contract.methods.getOwnershipHistory(id).call({ from: currentAccount });
                 document.getElementById("history").innerText = history.join("\n");
             } catch (err) {
-                alert("Error fetching history: " + err.message);
+                if (err.message.includes("Not an assigned user")) {
+                    document.getElementById("history").innerText = "Not assigned to any role";
+                } else {
+                    alert("Error fetching history: " + err.message);
+                }
+            }
+        }
+
+        async function getDrugCount() {
+            try {
+                const count = await contract.methods.getDrugCount().call();
+                document.getElementById("drugCount").innerText = count;
+            } catch (err) {
+                alert("Failed to get drug count: " + err.message);
             }
         }
     </script>
