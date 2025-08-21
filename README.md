@@ -45,10 +45,16 @@ DrugSC/
 * MetaMask extension installed and connected to Sepolia Testnet
 * Sepolia ETH (from faucet)
 
-### ⚡ Deploy Smart Contract (Already Deployed)
+### ⚡ Deploy Smart Contract (Already Deployed by)
 
 ```
-Deployed Address: 0x784E1b0168e670F324007c66e96BEdD5aa8Ac1D6
+Deployed Address: 0x760391dED47dd19772b23F25B771b75AD0a4E391
+```
+
+### ⚡ Smart Contract Address (Deployed at)
+
+```
+Contract Address: 0x2feFA95AD589Ebff3883C0d4d821fC65a74A37E0
 ```
 
 ### 🔍 Setup Frontend
